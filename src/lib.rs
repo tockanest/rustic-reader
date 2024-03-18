@@ -1,30 +1,53 @@
-mod errors; // Declare the module
-pub use errors::*; // Optionally, re-export the errors
+pub mod errors;
+pub mod reader;
+pub mod card;
 
-mod reader;
-mod card;
-
+use std::cell::RefCell;
 use neon::prelude::*;
+pub use errors::ReaderError;
+pub use reader::connect::*;
+pub use card::read;
+use pcsc;
 
-fn connect_js(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    // Simplified example: Always return Ok (you might want to handle errors and return them to JS)
-    let _ = reader::connect::connect();
-    Ok(cx.undefined())
+type BoxedReader = JsBox<RefCell<RusticReader>>;
+
+pub struct RusticReader {
+    context: pcsc::Context,
+    reader: String,
 }
 
-fn listen_card_events_js(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    // Starting a new thread to listen to events to avoid blocking the main JS thread
-    std::thread::spawn(move || {
-        let _ = card::read::listen_card_events(); // Adapt this as necessary
-    });
+impl Finalize for RusticReader {}
 
-    Ok(cx.undefined())
+impl RusticReader {
+    fn new() -> Self {
+        let (context, reader) = connect().or_else(|e| Err(e)).unwrap();
+        RusticReader {
+            context,
+            reader,
+        }
+    }
 }
+
+impl RusticReader {
+    fn connect(mut cx: FunctionContext) -> JsResult<BoxedReader> {
+        let reader = RefCell::new(RusticReader::new());
+        Ok(cx.boxed(reader))
+    }
+
+    fn get_reader_name(mut cx: FunctionContext) -> JsResult<JsString> {
+        let reader = cx.argument::<BoxedReader>(0)?;
+        let reader = reader.borrow();
+        let info = format!("Reader: {:?}", reader.reader);
+        Ok(cx.string(info))
+    }
+}
+
+
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
-    cx.export_function("connect", connect_js)?;
-    cx.export_function("listenCardEvents", listen_card_events_js)?;
+    cx.export_function("connect", RusticReader::connect)?;
+    cx.export_function("getReaderName", RusticReader::get_reader_name)?;
 
     Ok(())
 }

@@ -40,13 +40,12 @@ mod tests {
 
     #[test]
     fn test_connect() {
-        let result = connect();
+        let result = connect().unwrap();
         match result {
-            Ok(_) => println!("Connection successful."),
-            Err(e) => match e {
-                ReaderError::UnsupportedReader(_) => println!("Unsupported reader connected."),
-                _ => panic!("Unexpected error occurred."),
-            },
+            (ctx, reader) => {
+                println!("Connection successful. Reader: {}", reader);
+                disconnect(ctx).unwrap();
+            }
         }
     }
 
