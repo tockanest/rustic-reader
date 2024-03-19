@@ -1,4 +1,4 @@
-import {connect, getReaderName} from "rustic-reader";
+import {connect, getReaderName, readNdef} from "rustic-reader";
 
 class TypedRusticReader {
     private reader: () => void;
@@ -14,8 +14,17 @@ class TypedRusticReader {
     getReaderName(connection: () => void) {
         return getReaderName(connection);
     }
+    
+    readNdef(connection: () => void, blockNumber: number) {
+        return readNdef(connection, blockNumber);
+    }
 }
 
 const reader = new TypedRusticReader();
 const readerName = reader.getReaderName(reader.connection());
 console.log(readerName);
+const ndef = reader.readNdef(reader.connection(), 4);
+console.log(ndef);
+const str = ndef.toString("utf8");
+console.log(str)
+

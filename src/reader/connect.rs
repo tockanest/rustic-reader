@@ -1,4 +1,3 @@
-use std::ffi::CStr;
 use crate::errors::ReaderError;
 use pcsc::*;
 

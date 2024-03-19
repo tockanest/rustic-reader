@@ -1,5 +1,5 @@
 use std::fmt;
-use pcsc::{Card, Error};
+use pcsc::{Error};
 
 #[derive(Debug)]
 pub enum ReaderError {
